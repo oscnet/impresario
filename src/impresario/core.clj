@@ -48,9 +48,9 @@
                                valid-states)}))))
     (if-not (empty? @errors)
       (throw (RuntimeException. (format "Workflow[%s] had valiaiton erros: %s\n"
-                                         wf-name
-                                         (join "\n"
-                                               (map :msg @errors))))))
+                                        wf-name
+                                        (join "\n"
+                                              (map :msg @errors))))))
     true))
 
 (defn register-workflow [name definition]
@@ -64,9 +64,9 @@
 
 (defmacro register-workflow!
   ([the-name]
-     `(register-workflow! ~the-name (var-get (ns-resolve ~*ns* (symbol (name ~the-name))))))
+   `(register-workflow! ~the-name (var-get (ns-resolve ~*ns* (symbol (name ~the-name))))))
   ([the-name definition]
-     `(register-workflow ~the-name ~definition)))
+   `(register-workflow ~the-name ~definition)))
 
 (defn lookup-workflow [wf-name]
   (let [wf (get @registered-workflows wf-name)]
@@ -77,14 +77,14 @@
 
 (defn get-workflow [wkflow]
   (cond
-    (keyword? wkflow)
-    (lookup-workflow wkflow)
+   (keyword? wkflow)
+   (lookup-workflow wkflow)
 
-    (map? wkflow)
-    wkflow
+   (map? wkflow)
+   wkflow
 
-    :else
-    (throw (RuntimeException. (format "Error: can't get workflow via '%s' not a keyword (lookup) or a map (identity)" wkflow)))))
+   :else
+   (throw (RuntimeException. (format "Error: can't get workflow via '%s' not a keyword (lookup) or a map (identity)" wkflow)))))
 
 (defn pp-workflow [w]
   (with-out-str (pp/pprint (get-workflow w))))
@@ -100,27 +100,27 @@
 
 (defn resolve-keyword-to-fn [pred]
   (cond
-    (keyword? pred)
-    (fn-lookup-via-symbol pred)
-    :else
-    (throw (RuntimeException. (format "resolve-keyword-to-fn: Don't know how to resolve: '%s'" pred)))))
+   (keyword? pred)
+   (fn-lookup-via-symbol pred)
+   :else
+   (throw (RuntimeException. (format "resolve-keyword-to-fn: Don't know how to resolve: '%s'" pred)))))
 
 ;; Can't have both a :if and an :unless
 (defn- get-transition-predicate-fn [transition-info]
   (let [if-pred     (:if transition-info)
         unless-pred (:unless transition-info)]
     (cond
-      (and if-pred unless-pred)
-      (throw (RuntimeException. (format "Error: transition:'%s' has both an :if and an :unless!" transition-info)))
+     (and if-pred unless-pred)
+     (throw (RuntimeException. (format "Error: transition:'%s' has both an :if and an :unless!" transition-info)))
 
-      unless-pred
-      (complement (resolve-keyword-to-fn unless-pred))
+     unless-pred
+     (complement (resolve-keyword-to-fn unless-pred))
 
-      if-pred
-      (resolve-keyword-to-fn if-pred)
+     if-pred
+     (resolve-keyword-to-fn if-pred)
 
-      :else
-      (throw (RuntimeException. (format "Error: no :if or :else predicates in transition-info:%s" transition-info))))))
+     :else
+     (throw (RuntimeException. (format "Error: no :if or :else predicates in transition-info:%s" transition-info))))))
 
 
 (defn can-transition-to? [workflow current-state transition-info context]
@@ -145,19 +145,19 @@
                                        context))
                                     transitions))]
     (cond
-      (= 1 (count viable-next-states))
-      (:state (first viable-next-states))
+     (= 1 (count viable-next-states))
+     (:state (first viable-next-states))
 
-      (zero? (count viable-next-states))
-      nil
+     (zero? (count viable-next-states))
+     nil
 
-      :else
-      (throw
-       (RuntimeException.
-        (format "Error: multiple target states! workflow:%s curr:%s viable-targets:%s"
-                (:name workflow)
-                current-state
-                (vec viable-next-states)))))))
+     :else
+     (throw
+      (RuntimeException.
+       (format "Error: multiple target states! workflow:%s curr:%s viable-targets:%s"
+               (:name workflow)
+               current-state
+               (vec viable-next-states)))))))
 
 (defn transition? [workflow current-state context]
   (let [workflow (get-workflow workflow)]
@@ -171,14 +171,14 @@
 
 (defn seqize-triggers [triggers]
   (cond
-    (nil? triggers)
-    nil
+   (nil? triggers)
+   nil
 
-    (or (vector? triggers) (seq? triggers))
-    triggers
+   (or (vector? triggers) (seq? triggers))
+   triggers
 
-    :else
-    [triggers]))
+   :else
+   [triggers]))
 
 (defn on-exit-triggers [workflow state]
   (let [workflow (get-workflow workflow)]
@@ -205,21 +205,21 @@
   (let [workflow   (get-workflow workflow)
         state-info (get-transition-info workflow current-state next-state)]
     (cond
-      (empty? state-info)
-      (throw
-       (RuntimeException.
-        (format "Error: unable to find transition from %s to %s?? While looking up transition triggers."
-                current-state
-                next-state)))
-
-      (> 1 (count state-info))
+     (empty? state-info)
+     (throw
       (RuntimeException.
-       (format "Error: found more than 1 transition from %s to %s?? While looking up transition triggers."
+       (format "Error: unable to find transition from %s to %s?? While looking up transition triggers."
                current-state
-               next-state))
+               next-state)))
 
-      :else
-      (seqize-triggers (:on-transition (first state-info))))))
+     (> 1 (count state-info))
+     (RuntimeException.
+      (format "Error: found more than 1 transition from %s to %s?? While looking up transition triggers."
+              current-state
+              next-state))
+
+     :else
+     (seqize-triggers (:on-transition (first state-info))))))
 
 (defn global-transition-triggers [workflow]
   (let [workflow   (get-workflow workflow)]
@@ -229,10 +229,13 @@
 
 (defn execute-trigger [trigger workflow current-state next-state context]
   (let [workflow (get-workflow workflow)
-        f (resolve-keyword-to-fn trigger)]
+        f (cond
+           (keyword? trigger) (resolve-keyword-to-fn trigger)
+           (fn? trigger) trigger
+           :else nil)]
     (if-not f
-      (throw (RuntimeException. (format "Error: unable to resolve trigger (%s) to function!" trigger))))
-    (f workflow current-state next-state context)))
+      (throw (RuntimeException. (format "Error: unable to resolve trigger (%s) to function!" trigger)))
+      (f workflow current-state next-state context))))
 
 (defn execute-triggers [workflow current-state next-state curr-context]
   (let [context-validator-fn (if (:context-validator-fn workflow)
@@ -256,7 +259,7 @@
       (set-context! :on-entry      trigger))
     ;; UUID can't be lost from or overidden in the context
     (assoc
-        @context
+      @context
       :uuid uuid)))
 
 (defn transition-once! [workflow current-state context]
@@ -289,25 +292,25 @@
            [next-state next-context] (transition-once! workflow current-state context)
            iterations max]
       (cond
-        ;; we're done here, didn't transition
-        (nil? next-state)
-        [prev-state prev-context]
+       ;; we're done here, didn't transition
+       (nil? next-state)
+       [prev-state prev-context]
 
-        (= next-state prev-state)
-        (do
-          [next-state next-context])
+       (= next-state prev-state)
+       (do
+         [next-state next-context])
 
-        (is-final-state? workflow next-state)
-        [next-state next-context]
+       (is-final-state? workflow next-state)
+       [next-state next-context]
 
-        (zero? iterations)
-        (throw (RuntimeException. (format "Error: maximum number of iterations [%s] exceeded, aborting flow." max)))
+       (zero? iterations)
+       (throw (RuntimeException. (format "Error: maximum number of iterations [%s] exceeded, aborting flow." max)))
 
-        ;; keep trying to transition
-        :else
-        (recur [next-state next-context]
-               (transition-once! workflow next-state next-context)
-               (dec iterations))))))
+       ;; keep trying to transition
+       :else
+       (recur [next-state next-context]
+              (transition-once! workflow next-state next-context)
+              (dec iterations))))))
 
 (defn workflow-to-dot [workflow current-state]
   (let [workflow (get-workflow workflow)
@@ -378,7 +381,7 @@
 
 (defn path-tracing-trigger [workflow curr-state next-state context]
   (assoc
-      context
+    context
     :trace (conj (:trace context [])
                  [curr-state next-state])))
 

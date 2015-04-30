@@ -212,20 +212,25 @@
                    *context*       context#]
            (~alias))))))
 
-
-(defmacro kf [f]
-  (keywordize-fn (resolve f)))
-
-(defmacro register-trigger!
+(defn register-trigger!
   "register workflow wf with  e event  of f function"
-  [wf e f]
-  `(let  [kf# (kf ~f)
-          of# (~e ~wf)
-          nf# (cond
-               (nil? of#)
-               kf#
-               (or (vector? of#) (seq? of#))
-               (cons of# kf#)
+  [workflow e f]
+  (let  [workflow (wf/get-workflow workflow)
+          of (e workflow)
+          nf (cond
+               (nil? of)
+               [f]
+               (or (vector? of) (seq? of))
+               (cons of f)
                :else
-               [of# kf#])]
-     (assoc ~wf ~e nf#)))
+               [of f])]
+     (assoc workflow e nf)))
+
+(defn on-event! [workflow e & body]
+  (register-trigger! ~workflow ~e
+   (fn [workflow# current-state# next-state# context#]
+     (binding [*workflow*      workflow#
+               *current-state* current-state#
+               *next-state*    next-state#
+               *context*       context#]
+       ~@body))))

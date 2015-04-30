@@ -1,4 +1,4 @@
-(defproject com.github.kyleburton/impresario "1.0.13-SNAPSHOT"
+(defproject com.github.kyleburton/impresario "1.1.0"
   :description "Impresario: Workflow for Clojure"
   :url         "http://github.com/kyleburton/impresario"
   :lein-release {:deploy-via :clojars}
@@ -9,12 +9,13 @@
   :repositories         {"sonatype-oss-public" "https://oss.sonatype.org/content/groups/public/"}
   :local-repo-classpath true
   :autodoc {
-    :name "Impresario"
-    :page-title "Impresario: API Documentation"
-    :description "Workflow for Clojure"
-    :web-home "http://kyleburton.github.com/projects/impresario/"
-  }
-  :profiles             {:dev {:dependencies [[swank-clojure "1.4.3"]]}
+            :name "Impresario"
+            :page-title "Impresario: API Documentation"
+            :description "Workflow for Clojure"
+            :web-home "http://kyleburton.github.com/projects/impresario/"
+            }
+  :profiles             {:dev {:dependencies [[swank-clojure "1.4.3"]
+                                              [lein-light-nrepl "0.1.0"]]}
                          :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
                          :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
                          :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
@@ -22,4 +23,4 @@
                          :1.6 {:dependencies [[org.clojure/clojure "1.6.0-master-SNAPSHOT"]]}}
   :aliases              {"all" ["with-profile" "dev,1.2:dev,1.3:dev,1.4:dev,1.5:dev,1.6"]}
   :global-vars          {*warn-on-reflection* true}
-  :dependencies         [])
+  :repl-options {:nrepl-middleware [lighttable.nrepl.handler/lighttable-ops]})

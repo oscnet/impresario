@@ -3,7 +3,7 @@
    [impresario.core :as wf]))
 
 
-(defn- keywordize-fn [f]
+(defn keywordize-fn [f]
   (if (nil? f)
     nil
     (keyword (str (:ns   (meta f)))
@@ -39,10 +39,10 @@
            on-transition!-fn   (ns-resolve *ns* on-transition!-name)]
        (if transition?-fn
          (assoc attrs :transitions
-                (conj (:transitions attrs)
-                      {:state to-state-name
-                       :if    (keywordize-fn transition?-fn)
-                       :on-transition (keywordize-fn on-transition!-fn)}))
+           (conj (:transitions attrs)
+                 {:state to-state-name
+                  :if    (keywordize-fn transition?-fn)
+                  :on-transition (keywordize-fn on-transition!-fn)}))
          (throw (RuntimeException.
                  (format "Error: no transition predicate defined for: %s to %s named %s in ns %s.  Try:\n(defpredicate %s %s\n  false)"
                          state-name
@@ -112,17 +112,17 @@
         states           (if (map? (first states)) (next states) states)
         states-map       (reduce (fn [states-map state]
                                    (assoc states-map (second state)
-                                          state))
+                                     state))
                                  {}
                                  states)]
     (if (not (empty? forms))
       (throw (RuntimeException. (format "Error: unreconigzed forms: %s" forms))))
     `(def ~const-name
-          {:name ~workflow-name
-           :on-transition ~(get-global-on-transition)
-           :states        ~states-map
-           :on-enter      ~(get-global-on-enter)
-           :on-exit       ~(get-global-on-exit)})))
+       {:name ~workflow-name
+        :on-transition ~(get-global-on-transition)
+        :states        ~states-map
+        :on-enter      ~(get-global-on-enter)
+        :on-exit       ~(get-global-on-exit)})))
 
 
 (def ^{:dynamic true} *workflow* nil)
@@ -139,7 +139,7 @@
        (let [res# (do ~@body)]
          (if-not (map? res#)
            (throw (RuntimeException. (format  "Error: on-enter-any! trigger did not return a map! Got [%s] instead."
-                  res#))))
+                                              res#))))
          res#))))
 
 (defmacro on-exit-any! [& body]
@@ -151,7 +151,7 @@
        (let [res# (do ~@body)]
          (if-not (map? res#)
            (throw (RuntimeException. (format "Error: on-exit-any! trigger did not return a map! Got [%s] instead."
-                  res#))))
+                                             res#))))
          res#))))
 
 
@@ -165,7 +165,7 @@
          (let [res# (do ~@body)]
            (if-not (map? res#)
              (throw (RuntimeException. (format "Error: on-enter! trigger [%s] did not return a map! Got [%s] instead."
-                            ~(str trigger-name) res#))))
+                                               ~(str trigger-name) res#))))
            res#)))))
 
 
@@ -206,8 +206,26 @@
 (defmacro defpredicate-as [from-state to-state alias]
   (let [pred-name (transition-predicate-name from-state to-state)]
     `(def ~pred-name
-          (fn [workflow# current-state# context#]
-            (binding [*workflow*      workflow#
-                      *current-state* current-state#
-                      *context*       context#]
-              (~alias))))))
+       (fn [workflow# current-state# context#]
+         (binding [*workflow*      workflow#
+                   *current-state* current-state#
+                   *context*       context#]
+           (~alias))))))
+
+
+(defmacro kf [f]
+  (keywordize-fn (resolve f)))
+
+(defmacro register-trigger!
+  "register workflow wf with  e event  of f function"
+  [wf e f]
+  `(let  [kf# (kf ~f)
+          of# (~e ~wf)
+          nf# (cond
+               (nil? of#)
+               kf#
+               (or (vector? of#) (seq? of#))
+               (cons of# kf#)
+               :else
+               [of# kf#])]
+     (assoc ~wf ~e nf#)))

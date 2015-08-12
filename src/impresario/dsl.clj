@@ -234,3 +234,11 @@
                *next-state*    next-state#
                *context*       context#]
        ~@body))))
+
+(defmacro defpred [from-state to-state trans-name & body]
+  (let [pred-name (transition-predicate-name from-state to-state)]
+    `(defn ~pred-name ~trans-name [workflow# current-state# context#]
+       (binding [*workflow*      workflow#
+                 *current-state* current-state#
+                 *context*       context#]
+         ~@body))))

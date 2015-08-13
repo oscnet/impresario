@@ -192,7 +192,7 @@
 (defmacro register! [workflow-name]
   `(wf/register-workflow! ~workflow-name ~(symbol (format "%s" (name workflow-name)))))
 
-(defn- transition-predicate-name [from-state to-state]
+(defn transition-predicate-name [from-state to-state]
   (symbol (format "transition-from-%s-to-%s?" (name from-state) (name to-state))))
 
 (defmacro defpredicate [from-state to-state & body]
@@ -235,10 +235,4 @@
                *context*       context#]
        ~@body))))
 
-(defmacro defpred [from-state to-state trans-name & body]
-  (let [pred-name (transition-predicate-name from-state to-state)]
-    `(defn ~pred-name ~trans-name [workflow# current-state# context#]
-       (binding [*workflow*      workflow#
-                 *current-state* current-state#
-                 *context*       context#]
-         ~@body))))
+

@@ -312,10 +312,10 @@
               (transition-once! workflow next-state next-context)
               (dec iterations))))))
 
-(defn- pred-doc
-  "get pred function doc meta"
+(defn- pred-op
+  "get pred function op meta"
   [pred]
-  (:doc (meta (resolve-keyword-to-fn pred))))
+  (:op (meta (resolve-keyword-to-fn pred))))
 
 (defn workflow-to-dot [workflow current-state]
   (let [workflow (get-workflow workflow)
@@ -346,7 +346,7 @@
                        "Error: no :if or :unless in transition: %s for %s"
                        transition
                        state))))
-              pred-name (or (pred-doc (:if transition))
+              pred-name (or (pred-op (:if transition))
                             (:if transition)
                             (:unless transition))]
           (.append sb (format "  \"%s\" -> \"%s\" [label=\" %s%s\"];\n"
